@@ -840,5 +840,4 @@ internal class BetterPlayer(
             result.success(null)
         }
     }
-
 }
