@@ -821,6 +821,13 @@ internal class BetterPlayer(
                     .addTag(dataSource)
                     .setInputData(dataBuilder.build()).build()
                 WorkManager.getInstance(context).enqueue(cacheWorkRequest)
+                // Stop preCache 500ms after we start to download item
+                Handler().postDelayed({
+                    val request: WorkRequest = Builder(CacheWorker::class.java).build()
+                    workManager.enqueue(request)
+                    workManager.cancelWorkById(request.getId())
+                }, 500)
+               // end stop preCache
             }
             result.success(null)
         }

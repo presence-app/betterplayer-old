@@ -63,6 +63,11 @@ import PINCache
                 if !self._existsInStorage {
                     self._preCachedURLs[_key] = item
                     item.download()
+                    // Stop preCache 500ms after we start to download item
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        item.stopDownload()
+                    }
+                    // end stop preCache
                 } else {
                     self.completionHandler?(true)
                 }
