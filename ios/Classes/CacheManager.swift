@@ -223,5 +223,4 @@ extension CacheManager: CachingPlayerItemDelegate {
         NSLog("Error when downloading the file %@", error as NSError);
         self.completionHandler?(false)
     }
-
 }
