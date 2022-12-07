@@ -824,7 +824,7 @@ internal class BetterPlayer(
                 // Stop pre-caching after preCachingTime (250ms by default). Download is stopped because preCache is meant to
                 // support instant play of the video with minimal memory consumption.
                 Handler().postDelayed({
-                    cacheWorkRequest.cancelWorkById(cacheWorkRequest.getId())
+                    WorkManager.getInstance(context).cancelWorkById(cacheWorkRequest.getId())
                 }, 250)
                // end stop pre-caching
             }
