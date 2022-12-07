@@ -64,9 +64,9 @@ import PINCache
                     self._preCachedURLs[_key] = item
                     item.download()
 
-                     /* Stop pre-caching after preCachingTime (300ms by default). Download is stopped because preCache is meant to
+                     /* Stop pre-caching after preCachingTime (250ms by default). Download is stopped because preCache is meant to
                         support instant play of the video with minimal memory consumption */
-                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(250)) {
                         item.stopDownload()
                     }
                     // end stop pre-caching
