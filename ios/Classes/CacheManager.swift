@@ -18,10 +18,6 @@ import PINCache
     // Flag whether the CachingPlayerItem was already cached.
     var _existsInStorage: Bool = false
 
-    /* preCache will be downloading the file for this time (in milliseconds).
-       We may expose this var inside BetterPlayerCacheConfiguration https://jhomlala.github.io/betterplayer/#/cacheconfiguration */
-    var preCachingTime = 300
-
     let memoryConfig = MemoryConfig(
       /* Expiry date that will be applied by default for every added object
          if it's not overridden in the `setObject(forKey:expiry:)` method  */
@@ -69,7 +65,7 @@ import PINCache
                     item.download()
                      /* Stop pre-caching after preCachingTime (300ms by default). Download is stopped because preCache is meant to
                         support instant play of the video with minimal memory consumption */
-                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(preCachingTime)) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(300)) {
                         item.stopDownload()
                     }
                     // end stop pre-caching
