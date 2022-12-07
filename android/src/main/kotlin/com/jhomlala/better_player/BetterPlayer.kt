@@ -820,13 +820,7 @@ internal class BetterPlayer(
                 val cacheWorkRequest = OneTimeWorkRequest.Builder(CacheWorker::class.java)
                     .addTag(dataSource)
                     .setInputData(dataBuilder.build()).build()
-                WorkManager.getInstance(context).enqueue(cacheWorkRequest)
-                // Stop pre-caching after preCachingTime (250ms by default). Download is stopped because preCache is meant to
-                // support instant play of the video with minimal memory consumption.
-                Handler().postDelayed({
-                    WorkManager.getInstance(context).cancelWorkById(cacheWorkRequest.getId())
-                }, 250)
-               // end stop pre-caching
+                WorkManager.getInstance(context).enqueue(cacheWorkRequest)              
             }
             result.success(null)
         }
