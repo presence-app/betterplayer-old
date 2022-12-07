@@ -96,6 +96,10 @@ internal class BetterPlayer(
         customDefaultLoadControl ?: CustomDefaultLoadControl()
     private var lastSendBufferedPosition = 0L
 
+    // preCache will be downloading the file for this time (in milliseconds).
+    // We may expose this var inside BetterPlayerCacheConfiguration https://jhomlala.github.io/betterplayer/#/cacheconfiguration
+    private var preCachingTime: Int = 300
+
     init {
         val loadBuilder = DefaultLoadControl.Builder()
         loadBuilder.setBufferDurationsMs(
@@ -817,16 +821,16 @@ internal class BetterPlayer(
                 )
             }
             if (dataSource != null && context != null) {
-                WorkRequest cacheWorkRequest = OneTimeWorkRequest.Builder(CacheWorker::class.java)
-                    .addTag(dataSource)
-                    .setInputData(dataBuilder.build()).build()
+                val cacheWorkRequest = OneTimeWorkRequest.Builder(CacheWorker::class.java)
+                        .addTag(dataSource)
+                        .setInputData(dataBuilder.build()).build()
                 WorkManager.getInstance(context).enqueue(cacheWorkRequest)
-                // Stop preCache 500ms after we start to download item
+                // Stop pre-caching after preCachingTime (300ms by default). Download is stopped because preCache is meant to
+                // support instant play of the video with minimal memory consumption.
                 Handler().postDelayed({
-                    workManager.enqueue(cacheWorkRequest)
-                    workManager.cancelWorkById(cacheWorkRequest.getId())
-                }, 500)
-               // end stop preCache
+                    WorkManager.getInstance(context).cancelWorkById(cacheWorkRequest.getId())
+                }, preCachingTime)
+               // end stop pre-caching
             }
             result.success(null)
         }

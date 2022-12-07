@@ -6,8 +6,8 @@ import PINCache
 
 @objc public class CacheManager: NSObject {
 
-    // We store the last pre-cached CachingPlayerItem objects to be able to play even if the download
-    // has not finished.
+    /* We store the last pre-cached CachingPlayerItem objects to be able to play even if the download
+       has not finished. */
     var _preCachedURLs = Dictionary<String, CachingPlayerItem>()
 
     var completionHandler: ((_ success:Bool) -> Void)? = nil
@@ -17,10 +17,14 @@ import PINCache
     
     // Flag whether the CachingPlayerItem was already cached.
     var _existsInStorage: Bool = false
-    
+
+    /* preCache will be downloading the file for this time (in milliseconds).
+       We may expose this var inside BetterPlayerCacheConfiguration https://jhomlala.github.io/betterplayer/#/cacheconfiguration */
+    var preCachingTime = 300
+
     let memoryConfig = MemoryConfig(
-      // Expiry date that will be applied by default for every added object
-      // if it's not overridden in the `setObject(forKey:expiry:)` method
+      /* Expiry date that will be applied by default for every added object
+         if it's not overridden in the `setObject(forKey:expiry:)` method  */
       expiry: .never,
       // The maximum number of objects in memory the cache should hold
       countLimit: 0,
@@ -63,11 +67,12 @@ import PINCache
                 if !self._existsInStorage {
                     self._preCachedURLs[_key] = item
                     item.download()
-                    // Stop preCache 500ms after we start to download item
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                     /* Stop pre-caching after preCachingTime (300ms by default). Download is stopped because preCache is meant to
+                        support instant play of the video with minimal memory consumption */
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(preCachingTime)) {
                         item.stopDownload()
                     }
-                    // end stop preCache
+                    // end stop pre-caching
                 } else {
                     self.completionHandler?(true)
                 }
