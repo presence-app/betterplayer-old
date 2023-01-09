@@ -35,6 +35,7 @@ AVPictureInPictureController *_pipController;
     ///Fix for loading large videos
     if (@available(iOS 10.0, *)) {
         _player.automaticallyWaitsToMinimizeStalling = false;
+        _player.currentItem.preferredForwardBufferDuration = (10);
     }
   
 #ifdef BETTER_PLAYER_FLUTTER_TEXTURE
@@ -318,7 +319,9 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
                         [self getVideoCompositionWithTransform:self->_preferredTransform
                                                      withAsset:asset
                                                 withVideoTrack:videoTrack];
-                        item.videoComposition = videoComposition;
+                         #if !TARGET_OS_SIMULATOR
+                            item.videoComposition = videoComposition;
+                         #endif
                     }
                 };
                 [videoTrack loadValuesAsynchronouslyForKeys:@[ @"preferredTransform" ]

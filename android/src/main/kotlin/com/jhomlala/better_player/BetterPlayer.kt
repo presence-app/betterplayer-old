@@ -1,5 +1,5 @@
 package com.jhomlala.better_player
-
+//test osman
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -74,7 +74,8 @@ internal class BetterPlayer(
 ) {
     private val exoPlayer: ExoPlayer?
     private val eventSink = QueuingEventSink()
-    private val trackSelector: DefaultTrackSelector = DefaultTrackSelector(context)
+    private val trackSelector: DefaultTrackSelector =
+        DefaultTrackSelector(context)
     private val loadControl: LoadControl
     private var isInitialized = false
     private var surface: Surface? = null
@@ -133,14 +134,20 @@ internal class BetterPlayer(
         val userAgent = getUserAgent(headers)
         if (licenseUrl != null && licenseUrl.isNotEmpty()) {
             val httpMediaDrmCallback =
-                HttpMediaDrmCallback(licenseUrl, DefaultHttpDataSource.Factory())
+                HttpMediaDrmCallback(
+                    licenseUrl,
+                    DefaultHttpDataSource.Factory()
+                )
             if (drmHeaders != null) {
                 for ((drmKey, drmValue) in drmHeaders) {
                     httpMediaDrmCallback.setKeyRequestProperty(drmKey, drmValue)
                 }
             }
             if (Util.SDK_INT < 18) {
-                Log.e(TAG, "Protected content not supported on API levels below 18")
+                Log.e(
+                    TAG,
+                    "Protected content not supported on API levels below 18"
+                )
                 drmSessionManager = null
             } else {
                 val drmSchemeUuid = Util.getDrmUuid("widevine")
@@ -150,9 +157,13 @@ internal class BetterPlayer(
                             drmSchemeUuid
                         ) { uuid: UUID? ->
                             try {
-                                val mediaDrm = FrameworkMediaDrm.newInstance(uuid!!)
+                                val mediaDrm =
+                                    FrameworkMediaDrm.newInstance(uuid!!)
                                 // Force L3.
-                                mediaDrm.setPropertyString("securityLevel", "L3")
+                                mediaDrm.setPropertyString(
+                                    "securityLevel",
+                                    "L3"
+                                )
                                 return@setUuidAndExoMediaDrmProvider mediaDrm
                             } catch (e: UnsupportedDrmException) {
                                 return@setUuidAndExoMediaDrmProvider DummyExoMediaDrm()
@@ -164,7 +175,10 @@ internal class BetterPlayer(
             }
         } else if (clearKey != null && clearKey.isNotEmpty()) {
             drmSessionManager = if (Util.SDK_INT < 18) {
-                Log.e(TAG, "Protected content not supported on API levels below 18")
+                Log.e(
+                    TAG,
+                    "Protected content not supported on API levels below 18"
+                )
                 null
             } else {
                 DefaultDrmSessionManager.Builder()
@@ -189,9 +203,16 @@ internal class BetterPlayer(
         } else {
             dataSourceFactory = DefaultDataSource.Factory(context)
         }
-        val mediaSource = buildMediaSource(uri, dataSourceFactory, formatHint, cacheKey, context)
+        val mediaSource = buildMediaSource(
+            uri,
+            dataSourceFactory,
+            formatHint,
+            cacheKey,
+            context
+        )
         if (overriddenDuration != 0L) {
-            val clippingMediaSource = ClippingMediaSource(mediaSource, 0, overriddenDuration * 1000)
+            val clippingMediaSource =
+                ClippingMediaSource(mediaSource, 0, overriddenDuration * 1000)
             exoPlayer?.setMediaSource(clippingMediaSource)
         } else {
             exoPlayer?.setMediaSource(mediaSource)
@@ -205,86 +226,92 @@ internal class BetterPlayer(
         imageUrl: String?, notificationChannelName: String?,
         activityName: String
     ) {
-        val mediaDescriptionAdapter: MediaDescriptionAdapter = object : MediaDescriptionAdapter {
-            override fun getCurrentContentTitle(player: Player): String {
-                return title
-            }
+        val mediaDescriptionAdapter: MediaDescriptionAdapter =
+            object : MediaDescriptionAdapter {
+                override fun getCurrentContentTitle(player: Player): String {
+                    return title
+                }
 
-            @SuppressLint("UnspecifiedImmutableFlag")
-            override fun createCurrentContentIntent(player: Player): PendingIntent? {
-                val packageName = context.applicationContext.packageName
-                val notificationIntent = Intent()
-                notificationIntent.setClassName(
-                    packageName,
-                    "$packageName.$activityName"
-                )
-                notificationIntent.flags = (Intent.FLAG_ACTIVITY_CLEAR_TOP
-                        or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                return PendingIntent.getActivity(
-                    context, 0,
-                    notificationIntent,
-                    PendingIntent.FLAG_IMMUTABLE
-                )
-            }
+                @SuppressLint("UnspecifiedImmutableFlag")
+                override fun createCurrentContentIntent(player: Player): PendingIntent? {
+                    val packageName = context.applicationContext.packageName
+                    val notificationIntent = Intent()
+                    notificationIntent.setClassName(
+                        packageName,
+                        "$packageName.$activityName"
+                    )
+                    notificationIntent.flags = (Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    return PendingIntent.getActivity(
+                        context, 0,
+                        notificationIntent,
+                        PendingIntent.FLAG_IMMUTABLE
+                    )
+                }
 
-            override fun getCurrentContentText(player: Player): String? {
-                return author
-            }
+                override fun getCurrentContentText(player: Player): String? {
+                    return author
+                }
 
-            override fun getCurrentLargeIcon(
-                player: Player,
-                callback: BitmapCallback
-            ): Bitmap? {
-                if (imageUrl == null) {
+                override fun getCurrentLargeIcon(
+                    player: Player,
+                    callback: BitmapCallback
+                ): Bitmap? {
+                    if (imageUrl == null) {
+                        return null
+                    }
+                    if (bitmap != null) {
+                        return bitmap
+                    }
+                    val imageWorkRequest =
+                        OneTimeWorkRequest.Builder(ImageWorker::class.java)
+                            .addTag(imageUrl)
+                            .setInputData(
+                                Data.Builder()
+                                    .putString(
+                                        BetterPlayerPlugin.URL_PARAMETER,
+                                        imageUrl
+                                    )
+                                    .build()
+                            )
+                            .build()
+                    workManager.enqueue(imageWorkRequest)
+                    val workInfoObserver = Observer { workInfo: WorkInfo? ->
+                        try {
+                            if (workInfo != null) {
+                                val state = workInfo.state
+                                if (state == WorkInfo.State.SUCCEEDED) {
+                                    val outputData = workInfo.outputData
+                                    val filePath =
+                                        outputData.getString(BetterPlayerPlugin.FILE_PATH_PARAMETER)
+                                    //Bitmap here is already processed and it's very small, so it won't
+                                    //break anything.
+                                    bitmap = BitmapFactory.decodeFile(filePath)
+                                    bitmap?.let { bitmap ->
+                                        callback.onBitmap(bitmap)
+                                    }
+                                }
+                                if (state == WorkInfo.State.SUCCEEDED || state == WorkInfo.State.CANCELLED || state == WorkInfo.State.FAILED) {
+                                    val uuid = imageWorkRequest.id
+                                    val observer =
+                                        workerObserverMap.remove(uuid)
+                                    if (observer != null) {
+                                        workManager.getWorkInfoByIdLiveData(uuid)
+                                            .removeObserver(observer)
+                                    }
+                                }
+                            }
+                        } catch (exception: Exception) {
+                            Log.e(TAG, "Image select error: $exception")
+                        }
+                    }
+                    val workerUuid = imageWorkRequest.id
+                    workManager.getWorkInfoByIdLiveData(workerUuid)
+                        .observeForever(workInfoObserver)
+                    workerObserverMap[workerUuid] = workInfoObserver
                     return null
                 }
-                if (bitmap != null) {
-                    return bitmap
-                }
-                val imageWorkRequest = OneTimeWorkRequest.Builder(ImageWorker::class.java)
-                    .addTag(imageUrl)
-                    .setInputData(
-                        Data.Builder()
-                            .putString(BetterPlayerPlugin.URL_PARAMETER, imageUrl)
-                            .build()
-                    )
-                    .build()
-                workManager.enqueue(imageWorkRequest)
-                val workInfoObserver = Observer { workInfo: WorkInfo? ->
-                    try {
-                        if (workInfo != null) {
-                            val state = workInfo.state
-                            if (state == WorkInfo.State.SUCCEEDED) {
-                                val outputData = workInfo.outputData
-                                val filePath =
-                                    outputData.getString(BetterPlayerPlugin.FILE_PATH_PARAMETER)
-                                //Bitmap here is already processed and it's very small, so it won't
-                                //break anything.
-                                bitmap = BitmapFactory.decodeFile(filePath)
-                                bitmap?.let { bitmap ->
-                                    callback.onBitmap(bitmap)
-                                }
-                            }
-                            if (state == WorkInfo.State.SUCCEEDED || state == WorkInfo.State.CANCELLED || state == WorkInfo.State.FAILED) {
-                                val uuid = imageWorkRequest.id
-                                val observer = workerObserverMap.remove(uuid)
-                                if (observer != null) {
-                                    workManager.getWorkInfoByIdLiveData(uuid)
-                                        .removeObserver(observer)
-                                }
-                            }
-                        }
-                    } catch (exception: Exception) {
-                        Log.e(TAG, "Image select error: $exception")
-                    }
-                }
-                val workerUuid = imageWorkRequest.id
-                workManager.getWorkInfoByIdLiveData(workerUuid)
-                    .observeForever(workInfoObserver)
-                workerObserverMap[workerUuid] = workInfoObserver
-                return null
             }
-        }
         var playerNotificationChannelName = notificationChannelName
         if (notificationChannelName == null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -324,17 +351,26 @@ internal class BetterPlayer(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             refreshHandler = Handler(Looper.getMainLooper())
             refreshRunnable = Runnable {
-                val playbackState: PlaybackStateCompat = if (exoPlayer?.isPlaying == true) {
-                    PlaybackStateCompat.Builder()
-                        .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
-                        .setState(PlaybackStateCompat.STATE_PLAYING, position, 1.0f)
-                        .build()
-                } else {
-                    PlaybackStateCompat.Builder()
-                        .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
-                        .setState(PlaybackStateCompat.STATE_PAUSED, position, 1.0f)
-                        .build()
-                }
+                val playbackState: PlaybackStateCompat =
+                    if (exoPlayer?.isPlaying == true) {
+                        PlaybackStateCompat.Builder()
+                            .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
+                            .setState(
+                                PlaybackStateCompat.STATE_PLAYING,
+                                position,
+                                1.0f
+                            )
+                            .build()
+                    } else {
+                        PlaybackStateCompat.Builder()
+                            .setActions(PlaybackStateCompat.ACTION_SEEK_TO)
+                            .setState(
+                                PlaybackStateCompat.STATE_PAUSED,
+                                position,
+                                1.0f
+                            )
+                            .build()
+                    }
                 mediaSession?.setPlaybackState(playbackState)
                 refreshHandler?.postDelayed(refreshRunnable!!, 1000)
             }
@@ -344,7 +380,10 @@ internal class BetterPlayer(
             override fun onPlaybackStateChanged(playbackState: Int) {
                 mediaSession?.setMetadata(
                     MediaMetadataCompat.Builder()
-                        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDuration())
+                        .putLong(
+                            MediaMetadataCompat.METADATA_KEY_DURATION,
+                            getDuration()
+                        )
                         .build()
                 )
             }
@@ -397,46 +436,40 @@ internal class BetterPlayer(
         val mediaItem = mediaItemBuilder.build()
         var drmSessionManagerProvider: DrmSessionManagerProvider? = null
         drmSessionManager?.let { drmSessionManager ->
-            drmSessionManagerProvider = DrmSessionManagerProvider { drmSessionManager }
+            drmSessionManagerProvider =
+                DrmSessionManagerProvider { drmSessionManager }
         }
         return when (type) {
             C.CONTENT_TYPE_SS -> SsMediaSource.Factory(
                 DefaultSsChunkSource.Factory(mediaDataSourceFactory),
                 DefaultDataSource.Factory(context, mediaDataSourceFactory)
-            )
-                .apply {
-                    if (drmSessionManagerProvider != null) {
-                        setDrmSessionManagerProvider(drmSessionManagerProvider!!)
-                    }
+            ).apply {
+                if (drmSessionManagerProvider != null) {
+                    setDrmSessionManagerProvider(drmSessionManagerProvider!!)
                 }
-                .createMediaSource(mediaItem)
+            }.createMediaSource(mediaItem)
             C.CONTENT_TYPE_DASH -> DashMediaSource.Factory(
                 DefaultDashChunkSource.Factory(mediaDataSourceFactory),
                 DefaultDataSource.Factory(context, mediaDataSourceFactory)
-            )
-                .apply {
-                    if (drmSessionManagerProvider != null) {
-                        setDrmSessionManagerProvider(drmSessionManagerProvider!!)
-                    }
+            ).apply {
+                if (drmSessionManagerProvider != null) {
+                    setDrmSessionManagerProvider(drmSessionManagerProvider!!)
                 }
-                .createMediaSource(mediaItem)
+            }.createMediaSource(mediaItem)
             C.CONTENT_TYPE_HLS -> HlsMediaSource.Factory(mediaDataSourceFactory)
                 .apply {
                     if (drmSessionManagerProvider != null) {
                         setDrmSessionManagerProvider(drmSessionManagerProvider!!)
                     }
-                }
-                .createMediaSource(mediaItem)
+                }.createMediaSource(mediaItem)
             C.CONTENT_TYPE_OTHER -> ProgressiveMediaSource.Factory(
                 mediaDataSourceFactory,
                 DefaultExtractorsFactory()
-            )
-                .apply {
-                    if (drmSessionManagerProvider != null) {
-                        setDrmSessionManagerProvider(drmSessionManagerProvider!!)
-                    }
+            ).apply {
+                if (drmSessionManagerProvider != null) {
+                    setDrmSessionManagerProvider(drmSessionManagerProvider!!)
                 }
-                .createMediaSource(mediaItem)
+            }.createMediaSource(mediaItem)
             else -> {
                 throw IllegalStateException("Unsupported type: $type")
             }
@@ -444,7 +477,9 @@ internal class BetterPlayer(
     }
 
     private fun setupVideoPlayer(
-        eventChannel: EventChannel, textureEntry: SurfaceTextureEntry, result: MethodChannel.Result
+        eventChannel: EventChannel,
+        textureEntry: SurfaceTextureEntry,
+        result: MethodChannel.Result
     ) {
         eventChannel.setStreamHandler(
             object : EventChannel.StreamHandler {
@@ -490,7 +525,11 @@ internal class BetterPlayer(
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                eventSink.error("VideoError", "Video player had error $error", "")
+                eventSink.error(
+                    "VideoError",
+                    "Video player had error $error",
+                    ""
+                )
             }
         })
         val reply: MutableMap<String, Any> = HashMap()
@@ -512,16 +551,21 @@ internal class BetterPlayer(
     }
 
     @Suppress("DEPRECATION")
-    private fun setAudioAttributes(exoPlayer: ExoPlayer?, mixWithOthers: Boolean) {
+    private fun setAudioAttributes(
+        exoPlayer: ExoPlayer?,
+        mixWithOthers: Boolean
+    ) {
         val audioComponent = exoPlayer?.audioComponent ?: return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             audioComponent.setAudioAttributes(
-                AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
+                AudioAttributes.Builder()
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
                 !mixWithOthers
             )
         } else {
             audioComponent.setAudioAttributes(
-                AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(),
+                AudioAttributes.Builder()
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(),
                 !mixWithOthers
             )
         }
@@ -536,7 +580,8 @@ internal class BetterPlayer(
     }
 
     fun setLooping(value: Boolean) {
-        exoPlayer?.repeatMode = if (value) Player.REPEAT_MODE_ALL else Player.REPEAT_MODE_OFF
+        exoPlayer?.repeatMode =
+            if (value) Player.REPEAT_MODE_ALL else Player.REPEAT_MODE_OFF
     }
 
     fun setVolume(value: Double) {
@@ -579,7 +624,10 @@ internal class BetterPlayer(
             timeline?.let {
                 if (!timeline.isEmpty) {
                     val windowStartTimeMs =
-                        timeline.getWindow(0, Timeline.Window()).windowStartTimeMs
+                        timeline.getWindow(
+                            0,
+                            Timeline.Window()
+                        ).windowStartTimeMs
                     val pos = exoPlayer?.currentPosition ?: 0L
                     return windowStartTimeMs + pos
                 }
@@ -629,7 +677,8 @@ internal class BetterPlayer(
                 0, mediaButtonIntent,
                 PendingIntent.FLAG_IMMUTABLE
             )
-            val mediaSession = MediaSessionCompat(context, TAG, null, pendingIntent)
+            val mediaSession =
+                MediaSessionCompat(context, TAG, null, pendingIntent)
             mediaSession.setCallback(object : MediaSessionCompat.Callback() {
                 override fun onSeekTo(pos: Long) {
                     sendSeekToEvent(pos)
@@ -667,7 +716,8 @@ internal class BetterPlayer(
                     if (mappedTrackInfo.getRendererType(rendererIndex) != C.TRACK_TYPE_AUDIO) {
                         continue
                     }
-                    val trackGroupArray = mappedTrackInfo.getTrackGroups(rendererIndex)
+                    val trackGroupArray =
+                        mappedTrackInfo.getTrackGroups(rendererIndex)
                     var hasElementWithoutLabel = false
                     var hasStrangeAudioTrack = false
                     for (groupIndex in 0 until trackGroupArray.length) {
@@ -687,18 +737,30 @@ internal class BetterPlayer(
                         for (groupElementIndex in 0 until group.length) {
                             val label = group.getFormat(groupElementIndex).label
                             if (name == label && index == groupIndex) {
-                                setAudioTrack(rendererIndex, groupIndex, groupElementIndex)
+                                setAudioTrack(
+                                    rendererIndex,
+                                    groupIndex,
+                                    groupElementIndex
+                                )
                                 return
                             }
 
                             ///Fallback option
                             if (!hasStrangeAudioTrack && hasElementWithoutLabel && index == groupIndex) {
-                                setAudioTrack(rendererIndex, groupIndex, groupElementIndex)
+                                setAudioTrack(
+                                    rendererIndex,
+                                    groupIndex,
+                                    groupElementIndex
+                                )
                                 return
                             }
                             ///Fallback option
                             if (hasStrangeAudioTrack && name == label) {
-                                setAudioTrack(rendererIndex, groupIndex, groupElementIndex)
+                                setAudioTrack(
+                                    rendererIndex,
+                                    groupIndex,
+                                    groupElementIndex
+                                )
                                 return
                             }
                         }
@@ -710,14 +772,19 @@ internal class BetterPlayer(
         }
     }
 
-    private fun setAudioTrack(rendererIndex: Int, groupIndex: Int, groupElementIndex: Int) {
+    private fun setAudioTrack(
+        rendererIndex: Int,
+        groupIndex: Int,
+        groupElementIndex: Int
+    ) {
         val mappedTrackInfo = trackSelector.currentMappedTrackInfo
         if (mappedTrackInfo != null) {
+
             val builder = trackSelector.parameters.buildUpon()
                 .setRendererDisabled(rendererIndex, false)
-                .addOverride(TrackSelectionOverride(mappedTrackInfo.getTrackGroups(rendererIndex)
-                    .get(groupIndex), rendererIndex)
-                )
+                .addOverride(TrackSelectionOverride(mappedTrackInfo.getTrackGroups(
+                    rendererIndex
+                ).get(groupIndex), rendererIndex))
                 .build()
 
             trackSelector.parameters = builder
@@ -768,7 +835,8 @@ internal class BetterPlayer(
         private const val FORMAT_DASH = "dash"
         private const val FORMAT_HLS = "hls"
         private const val FORMAT_OTHER = "other"
-        private const val DEFAULT_NOTIFICATION_CHANNEL = "BETTER_PLAYER_NOTIFICATION"
+        private const val DEFAULT_NOTIFICATION_CHANNEL =
+            "BETTER_PLAYER_NOTIFICATION"
         private const val NOTIFICATION_ID = 20772077
 
         //Clear cache without accessing BetterPlayerCache.
@@ -801,17 +869,34 @@ internal class BetterPlayer(
 
         //Start pre cache of video. Invoke work manager job and start caching in background.
         fun preCache(
-            context: Context?, dataSource: String?, preCacheSize: Long,
-            maxCacheSize: Long, maxCacheFileSize: Long, headers: Map<String, String?>,
-            cacheKey: String?, result: MethodChannel.Result
+            context: Context?,
+            dataSource: String?,
+            preCacheSize: Long,
+            maxCacheSize: Long,
+            maxCacheFileSize: Long,
+            headers: Map<String, String?>,
+            cacheKey: String?,
+            result: MethodChannel.Result
         ) {
             val dataBuilder = Data.Builder()
                 .putString(BetterPlayerPlugin.URL_PARAMETER, dataSource)
-                .putLong(BetterPlayerPlugin.PRE_CACHE_SIZE_PARAMETER, preCacheSize)
-                .putLong(BetterPlayerPlugin.MAX_CACHE_SIZE_PARAMETER, maxCacheSize)
-                .putLong(BetterPlayerPlugin.MAX_CACHE_FILE_SIZE_PARAMETER, maxCacheFileSize)
+                .putLong(
+                    BetterPlayerPlugin.PRE_CACHE_SIZE_PARAMETER,
+                    preCacheSize
+                )
+                .putLong(
+                    BetterPlayerPlugin.MAX_CACHE_SIZE_PARAMETER,
+                    maxCacheSize
+                )
+                .putLong(
+                    BetterPlayerPlugin.MAX_CACHE_FILE_SIZE_PARAMETER,
+                    maxCacheFileSize
+                )
             if (cacheKey != null) {
-                dataBuilder.putString(BetterPlayerPlugin.CACHE_KEY_PARAMETER, cacheKey)
+                dataBuilder.putString(
+                    BetterPlayerPlugin.CACHE_KEY_PARAMETER,
+                    cacheKey
+                )
             }
             for (headerKey in headers.keys) {
                 dataBuilder.putString(
@@ -820,28 +905,27 @@ internal class BetterPlayer(
                 )
             }
             if (dataSource != null && context != null) {
-                val cacheWorkRequest = OneTimeWorkRequest.Builder(CacheWorker::class.java)
+                val cacheWorkRequest =
+                    OneTimeWorkRequest.Builder(CacheWorker::class.java)
                         .addTag(dataSource)
                         .setInputData(dataBuilder.build()).build()
                 WorkManager.getInstance(context).enqueue(cacheWorkRequest)
-
-                // Stop pre-caching after preCachingTime (250ms by default). Download is stopped because preCache is meant to
-                // support instant play of the video with minimal memory consumption.
-                Handler().postDelayed({
-                    WorkManager.getInstance(context).cancelWorkById(cacheWorkRequest.getId())
-                }, 250)
-               // end stop pre-caching
             }
             result.success(null)
         }
 
         //Stop pre cache of video with given url. If there's no work manager job for given url, then
         //it will be ignored.
-        fun stopPreCache(context: Context?, url: String?, result: MethodChannel.Result) {
+        fun stopPreCache(
+            context: Context?,
+            url: String?,
+            result: MethodChannel.Result
+        ) {
             if (url != null && context != null) {
                 WorkManager.getInstance(context).cancelAllWorkByTag(url)
             }
             result.success(null)
         }
     }
+
 }
