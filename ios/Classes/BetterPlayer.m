@@ -35,9 +35,8 @@ AVPictureInPictureController *_pipController;
     ///Fix for loading large videos
     if (@available(iOS 10.0, *)) {
         _player.automaticallyWaitsToMinimizeStalling = false;
-        _player.currentItem.preferredForwardBufferDuration = (10);
     }
-  
+
 #ifdef BETTER_PLAYER_FLUTTER_TEXTURE
   _displayLink = [CADisplayLink displayLinkWithTarget:frameUpdater
                                              selector:@selector(onDisplayLink:)];
@@ -94,7 +93,7 @@ AVPictureInPictureController *_pipController;
 #endif
 
 - (void)clear {
-  
+
 #ifdef BETTER_PLAYER_FLUTTER_TEXTURE
     _displayLink.paused = YES;
 #endif
@@ -203,7 +202,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         fps = (int) ceil(nominalFrameRate);
     }
     videoComposition.frameDuration = CMTimeMake(1, fps);
-    
+
     return videoComposition;
 }
 
@@ -212,7 +211,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (_player.currentItem == nil) {
         return;
     }
-    
+
     if (_videoOutput) {
         NSArray<AVPlayerItemOutput*>* outputs = [[_player currentItem] outputs];
         for (AVPlayerItemOutput* output in outputs) {
@@ -221,7 +220,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
             }
         }
     }
-    
+
     NSDictionary* pixBuffAttributes = @{
         (id)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_32BGRA),
         (id)kCVPixelBufferIOSurfacePropertiesKey : @{}
@@ -261,7 +260,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (headers == [NSNull null] || headers == NULL){
         headers = @{};
     }
-    
+
     AVPlayerItem* item;
     if (useCache){
         if (cacheKey == [NSNull null]){
@@ -270,7 +269,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         if (videoExtension == [NSNull null]){
             videoExtension = nil;
         }
-        
+
         item = [cacheManager getCachingPlayerItemForNormalPlayback:url cacheKey:cacheKey videoExtension: videoExtension headers:headers];
     } else {
         AVURLAsset* asset = [AVURLAsset URLAssetWithURL:url
@@ -319,9 +318,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
                         [self getVideoCompositionWithTransform:self->_preferredTransform
                                                      withAsset:asset
                                                 withVideoTrack:videoTrack];
-                         #if !TARGET_OS_SIMULATOR
-                            item.videoComposition = videoComposition;
-                         #endif
+                        item.videoComposition = videoComposition;
                     }
                 };
                 [videoTrack loadValuesAsynchronouslyForKeys:@[ @"preferredTransform" ]
@@ -799,11 +796,11 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 - (CVPixelBufferRef)prevTransparentBuffer {
     if (_prevBuffer) {
         CVPixelBufferLockBaseAddress(_prevBuffer, 0);
-        
+
         int bufferWidth = CVPixelBufferGetWidth(_prevBuffer);
         int bufferHeight = CVPixelBufferGetHeight(_prevBuffer);
         unsigned char* pixel = (unsigned char*)CVPixelBufferGetBaseAddress(_prevBuffer);
-        
+
         for (int row = 0; row < bufferHeight; row++) {
             for (int column = 0; column < bufferWidth; column++) {
                 pixel[0] = 0;
@@ -826,7 +823,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
      ![[_player currentItem] isPlaybackLikelyToKeepUp]) {
      return [self prevTransparentBuffer];
      }*/
-    
+
     CMTime outputItemTime = [_videoOutput itemTimeForHostTime:CACurrentMediaTime()];
     if ([_videoOutput hasNewPixelBufferForItemTime:outputItemTime]) {
         _failedCount = 0;
