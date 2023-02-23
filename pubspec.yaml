@@ -20,7 +20,7 @@ dependencies:
   flutter_widget_from_html_core: ^0.8.5+3
   visibility_detector: ^0.3.3
   path_provider: ^2.0.10
-  collection: ^1.16.0
+  collection: ^1.17.1
   xml: ^6.1.0
 
 dev_dependencies:
