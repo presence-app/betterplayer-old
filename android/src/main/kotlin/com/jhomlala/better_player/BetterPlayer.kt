@@ -910,7 +910,7 @@ internal class BetterPlayer(
                                 .addTag(dataSource)
                                 .setInputData(dataBuilder.build()).build()
                 WorkManager.getInstance(context).enqueue(cacheWorkRequest)
-                 // Stop pre-caching after preCachingTime (250ms by default). Download is stopped because preCache is meant to
+                 // Stop pre-caching after preCachingTime (350ms by default). Download is stopped because preCache is meant to
                 // support instant play of the video with minimal memory consumption.
                 Handler().postDelayed({
                     Log.e(TAG, "Stop preCaching downloading....")
