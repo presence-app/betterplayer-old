@@ -20,7 +20,8 @@ class _CachePageState extends State<CachePage> {
     );
     _betterPlayerDataSource = BetterPlayerDataSource(
       BetterPlayerDataSourceType.network,
-      Constants.phantomVideoUrl,
+      //Constants.phantomVideoUrl,
+      'https://d305e11xqcgjdr.cloudfront.net/stories/4cf90380-e814-4f74-aac0-250a7b2cbaac/4.mp4',
       cacheConfiguration: BetterPlayerCacheConfiguration(
         useCache: true,
         preCacheSize: 10 * 1024 * 1024,
@@ -32,11 +33,13 @@ class _CachePageState extends State<CachePage> {
       ),
     );
     _betterPlayerController = BetterPlayerController(betterPlayerConfiguration);
+
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Cache"),
@@ -62,6 +65,10 @@ class _CachePageState extends State<CachePage> {
             child: Text("Start pre cache"),
             onPressed: () {
               _betterPlayerController.preCache(_betterPlayerDataSource);
+              Future.delayed(const Duration(milliseconds: 500), () {
+               // _betterPlayerController.stopPreCache(_betterPlayerDataSource);
+              });
+
             },
           ),
           TextButton(
@@ -74,6 +81,7 @@ class _CachePageState extends State<CachePage> {
             child: Text("Play video"),
             onPressed: () {
               _betterPlayerController.setupDataSource(_betterPlayerDataSource);
+              _betterPlayerController.play();
             },
           ),
           TextButton(

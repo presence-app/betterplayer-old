@@ -57,31 +57,53 @@ import PINCache
         self.completionHandler = completionHandler
         
         let _key: String = cacheKey ?? url.absoluteString
+         //NSLog("@_key:::::", _key);
+
         // Make sure the item is not already being downloaded
         if self._preCachedURLs[_key] == nil {            
             if let item = self.getCachingPlayerItem(url, cacheKey: _key, videoExtension: videoExtension, headers: headers){
                 if !self._existsInStorage {
+                    NSLog("preCache Download started...");
                     self._preCachedURLs[_key] = item
                     item.download()
 
-                     /* Stop pre-caching after preCachingTime (250ms by default). Download is stopped because preCache is meant to
+                     /* Stop pre-caching after preCachingTime (350ms by default). Download is stopped because preCache is meant to
                         support instant play of the video with minimal memory consumption */
-                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(250)) {
-                        item.stopDownload()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(350)) {
+                       // self.stopPreCacheDownload(url: url, cacheKey:_key)
+                         item.stopDownload(url: url, cacheKey:_key)
+                        //self.completionHandler?(false)
+                        self._existsInStorage=true
+                        //NSLog("preCache Download stopped...");
                     }
                     // end stop pre-caching
                 } else {
                     self.completionHandler?(true)
+                    self._preCachedURLs[_key] = item
+                    NSLog("File already in the cache.");
                 }
             } else {
+              //  NSLog("completionHandler.");
                 self.completionHandler?(false)
             }
         } else {
+           // NSLog("_preCachedURLs[_key] == nil");
             self.completionHandler?(true)
         }
     }
-    
+
+    //Not used. I moved this to CachingPlayerItem and named it stopDowload
+    @objc public func stopPreCacheDownload(url: URL, cacheKey: String?) -> Void {
+        //NSLog("Stop preCache download...");
+        var mediaurl = URL(string: url.absoluteString)!
+        let request = URLRequest(url: mediaurl)
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in}
+        task.cancel()
+    }
+
+    //Old version - looks like it is not really used
     @objc public func stopPreCache(_ url: URL, cacheKey: String?, completionHandler: ((_ success:Bool) -> Void)?){
+       // NSLog("Stop preCache...");
         let _key: String = cacheKey ?? url.absoluteString
         if self._preCachedURLs[_key] != nil {
             let playerItem = self._preCachedURLs[_key]!
@@ -92,7 +114,8 @@ import PINCache
         }
         self.completionHandler?(false)
     }
-    
+
+
     ///Gets caching player item for normal playback.
     @objc public func getCachingPlayerItemForNormalPlayback(_ url: URL, cacheKey: String?, videoExtension: String?, headers: Dictionary<NSObject,AnyObject>) -> AVPlayerItem? {
         let mimeTypeResult = getMimeType(url:url, explicitVideoExtension: videoExtension)

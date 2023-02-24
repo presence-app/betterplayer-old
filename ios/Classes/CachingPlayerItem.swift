@@ -31,10 +31,13 @@ fileprivate extension URL {
     
     /// Is called on downloading error.
     @objc optional func playerItem(_ playerItem: CachingPlayerItem, downloadingFailedWith error: Error)
-    
+
 }
 
+
+
 open class CachingPlayerItem: AVPlayerItem {
+
     
     class ResourceLoaderDelegate: NSObject, AVAssetResourceLoaderDelegate, URLSessionDelegate, URLSessionDataDelegate, URLSessionTaskDelegate {
         
@@ -46,6 +49,8 @@ open class CachingPlayerItem: AVPlayerItem {
         var response: URLResponse?
         var pendingRequests = Set<AVAssetResourceLoadingRequest>()
         weak var owner: CachingPlayerItem?
+
+
         
         func resourceLoader(_ resourceLoader: AVAssetResourceLoader, shouldWaitForLoadingOfRequestedResource loadingRequest: AVAssetResourceLoadingRequest) -> Bool {
             if playingFromData {
@@ -195,6 +200,18 @@ open class CachingPlayerItem: AVPlayerItem {
     open func stopDownload(){
         resourceLoaderDelegate.session?.invalidateAndCancel()
     }
+
+     ///Stops preCache download. Coded as alternative to stopDownload() because invalidateAndCancel()
+     //was crashing the player if run before file download completion. Currently used to stop preCache download
+     //we must investigate if it can substitute stopDownload() in all cases.
+     open func stopDownload(url: URL, cacheKey: String?) {
+          NSLog("Stop preCache download...");
+          var mediaurl = URL(string: url.absoluteString)!
+          let request = URLRequest(url: mediaurl)
+          let task = resourceLoaderDelegate.session!.dataTask(with: request) { data, response, error in}
+          task.cancel()
+     }
+
     
     private let cachingPlayerItemScheme = "cachingPlayerItemScheme"
     
